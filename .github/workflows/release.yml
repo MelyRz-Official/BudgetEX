@@ -44,12 +44,12 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
-        release_name: Budget Manager ${{ github.ref_name }}
+        name: Budget Manager ${{ github.ref_name }}
         body: |
           # Budget Manager Release ${{ github.ref_name }}
           
@@ -101,7 +101,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -124,28 +124,25 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         Compress-Archive -Path dist/budget-manager.exe -DestinationPath ${{ matrix.asset_name }}-${{ github.ref_name }}.zip
+      shell: powershell
 
     - name: Upload Release Asset (Linux/macOS)
       if: runner.os != 'Windows'
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./${{ matrix.asset_name }}-${{ github.ref_name }}.tar.gz
-        asset_name: ${{ matrix.asset_name }}-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
+        tag_name: ${{ github.ref_name }}
+        files: ./${{ matrix.asset_name }}-${{ github.ref_name }}.tar.gz
 
     - name: Upload Release Asset (Windows)
       if: runner.os == 'Windows'
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./${{ matrix.asset_name }}-${{ github.ref_name }}.zip
-        asset_name: ${{ matrix.asset_name }}-${{ github.ref_name }}.zip
-        asset_content_type: application/zip
+        tag_name: ${{ github.ref_name }}
+        files: ./${{ matrix.asset_name }}-${{ github.ref_name }}.zip
 
   build-python-package:
     name: Build Python Package
@@ -157,7 +154,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -172,12 +169,17 @@ jobs:
     - name: Check package
       run: twine check dist/*
 
+    - name: Find built package
+      id: find_package
+      run: |
+        PACKAGE_FILE=$(ls dist/*.tar.gz | head -1)
+        echo "package_file=$PACKAGE_FILE" >> $GITHUB_OUTPUT
+        echo "Found package: $PACKAGE_FILE"
+
     - name: Upload Python Package
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./dist/budget_manager-${{ github.ref_name }}.tar.gz
-        asset_name: budget-manager-python-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
+        tag_name: ${{ github.ref_name }}
+        files: ${{ steps.find_package.outputs.package_file }}
