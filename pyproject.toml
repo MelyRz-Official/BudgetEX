@@ -9,10 +9,10 @@ description = "A professional personal finance management application with moder
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Melissa Ruiz", email = "your-email@example.com"}
+    {name = "Melissa Ruiz Ruiz", email = "melissaruizruiz1@gmail.com"}
 ]
 maintainers = [
-    {name = "Melissa Ruiz", email = "your-email@example.com"}
+    {name = "Melissa Ruiz Ruiz", email = "melissaruizruiz1@gmail.com"}
 ]
 keywords = ["budget", "finance", "personal-finance", "money", "management", "accounting"]
 classifiers = [
@@ -74,11 +74,11 @@ budget-manager = "budget_app:main"
 budget-test = "run_tests:main"
 
 [project.urls]
-Homepage = "https://github.com/MellyRz-Official/BudgetEX"
-Repository = "https://github.com/MellyRz-Official/BudgetEX"
-Documentation = "https://github.com/MellyRz-Official/BudgetEX#readme"
-"Bug Reports" = "https://github.com/MellyRz-Official/BudgetEX/issues"
-Changelog = "https://github.com/MellyRz-Official/BudgetEX/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/MelyRz-Official/BudgetEX"
+Repository = "https://github.com/MelyRz-Official/BudgetEX"
+Documentation = "https://github.com/MelyRz-Official/BudgetEX#readme"
+"Bug Reports" = "https://github.com/MelyRz-Official/BudgetEX/issues"
+Changelog = "https://github.com/MelyRz-Official/BudgetEX/blob/main/CHANGELOG.md"
 
 # Tool configurations
 [tool.setuptools]
@@ -95,7 +95,7 @@ exclude = ["tests*", "docs*", "examples*"]
 [tool.black]
 line-length = 100
 target-version = ['py39', 'py310', 'py311', 'py312']
-include = '\.pyi?
+include = '\.pyi?$'
 exclude = '''
 /(
     \.eggs
@@ -206,8 +206,3 @@ directory = "htmlcov"
 [tool.bandit]
 exclude_dirs = ["tests", "test_*.py", "*_test.py"]
 skips = ["B101", "B601"]  # Skip assert_used and shell injection (for tests)
-
-# Flake8 style guide (in setup.cfg since flake8 doesn't support pyproject.toml yet)
-# Configuration will be in setup.cfg
-
-# Pre-commit hooks configuration (will be in separate file)
