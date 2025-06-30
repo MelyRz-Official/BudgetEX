@@ -1,0 +1,26 @@
+{
+  "theme": "dark",
+  "window_width": 1400,
+  "window_height": 900,
+  "default_scenario": "July-December 2025",
+  "default_paycheck": 3984.94,
+  "auto_save": false,
+  "auto_backup": true,
+  "backup_frequency_days": 7,
+  "database_filename": "budget_data.db",
+  "backup_directory": "backups",
+  "export_directory": "exports",
+  "currency_symbol": "$",
+  "decimal_places": 2,
+  "show_percentages": true,
+  "show_fixed_indicators": true,
+  "chart_style": "dark_background",
+  "chart_colors": {
+    "budgeted": "#4CAF50",
+    "actual": "#FF6B6B",
+    "under_budget": "#2E7D32",
+    "over_budget": "#D32F2F",
+    "on_target": "#1976D2",
+    "not_set": "#757575"
+  }
+}

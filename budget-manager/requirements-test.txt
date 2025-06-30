@@ -1,0 +1,24 @@
+# Testing dependencies for Budget Manager (Windows Compatible)
+
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0          # Coverage reporting
+pytest-mock>=3.10.0        # Mocking utilities
+pytest-timeout>=2.1.0      # Test timeout handling
+
+# Test data and factories
+faker>=18.0.0               # Fake data generation
+
+# Performance testing
+pytest-benchmark>=4.0.0    # Performance benchmarking
+
+# Assertion helpers
+freezegun>=1.2.0           # Time mocking
+
+# HTML and reporting
+pytest-html>=3.1.0         # HTML test reports
+
+# Code quality (optional - can be installed separately)
+# flake8>=6.0.0              # Code style checking
+# black>=23.0.0              # Code formatting
+# isort>=5.12.0              # Import sorting
