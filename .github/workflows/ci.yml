@@ -1,0 +1,104 @@
+name: Budget Manager CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allows manual trigger
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+
+    - name: Create necessary directories
+      run: |
+        mkdir -p backups
+        mkdir -p exports
+
+    - name: Run Budget Manager tests
+      run: |
+        echo "🧪 Running Budget Manager test suite..."
+        python run_tests.py
+
+    - name: Test imports
+      run: |
+        python -c "import config; print('✅ Config import successful')"
+        python -c "from models.budget_model import BudgetModel; print('✅ Model import successful')"
+        python -c "from controllers.budget_controller import BudgetController; print('✅ Controller import successful')"
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install linting tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install black flake8
+
+    - name: Run Black formatting check
+      run: |
+        black --check --diff models/ controllers/ config.py run_tests.py
+      continue-on-error: true
+
+    - name: Run Flake8 linting
+      run: |
+        flake8 models/ controllers/ config.py --max-line-length=100 --ignore=E203,W503
+      continue-on-error: true
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: always()
+
+    steps:
+    - name: Job Summary
+      run: |
+        echo "🎉 Budget Manager CI Pipeline Complete!"
+        echo "✅ Tests: ${{ needs.test.result }}"
+        echo "✅ Code Quality: ${{ needs.lint.result }}"
+        
+        if [ "${{ needs.test.result }}" == "success" ]; then
+          echo "🏆 All tests passed! Budget Manager is ready for deployment."
+        else
+          echo "⚠️ Some checks need attention. Please review the logs above."
+        fi
