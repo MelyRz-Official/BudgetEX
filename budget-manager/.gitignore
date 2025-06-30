@@ -1,0 +1,19 @@
+
+# CI/CD artifacts
+.github/badges/
+*-report.json
+*-report.html
+coverage.xml
+.coverage
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Pre-commit
+.pre-commit-config.yaml.backup

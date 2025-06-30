@@ -1,0 +1,81 @@
+# MANIFEST.in - Package manifest for Budget Manager
+# Specifies additional files to include in the distribution package
+
+# Documentation files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Configuration files
+include pyproject.toml
+include setup.cfg
+include requirements*.txt
+
+# GitHub workflows and configuration
+recursive-include .github *.yml *.yaml *.md
+
+# Test files and configuration
+recursive-include tests *.py
+include pytest.ini
+include .pre-commit-config.yaml
+
+# Package data
+recursive-include models *.py
+recursive-include controllers *.py
+include config.py
+include run_tests.py
+
+# Documentation
+recursive-include docs *.md *.rst *.txt
+recursive-include docs *.png *.jpg *.svg
+
+# Examples and scripts
+recursive-include examples *.py *.md
+recursive-include scripts *.py *.sh *.bat
+
+# Version file
+include budget_manager/__version__.py
+
+# Exclude unnecessary files
+exclude .gitignore
+exclude .pre-commit-config.yaml
+exclude .secrets.baseline
+exclude *.db
+exclude *.log
+
+# Exclude build artifacts
+prune build
+prune dist
+prune *.egg-info
+prune __pycache__
+prune .pytest_cache
+prune .mypy_cache
+prune htmlcov
+
+# Exclude development files
+exclude .coverage
+exclude coverage.xml
+exclude .tox
+prune .tox
+
+# Exclude IDE files
+prune .vscode
+prune .idea
+exclude *.swp
+exclude *.swo
+exclude *~
+
+# Exclude OS files
+exclude .DS_Store
+exclude Thumbs.db
+
+# Exclude backup files
+exclude *backup*
+exclude backups
+prune backups
+
+# Exclude temporary files
+exclude *.tmp
+exclude *.temp
+prune tmp

@@ -1,0 +1,45 @@
+# Development dependencies for Budget Manager
+# Install with: pip install -r requirements-dev.txt
+
+# Include production dependencies
+-r requirements.txt
+
+# Testing Framework
+pytest>=7.0.0
+pytest-cov>=4.0.0          # Coverage reporting
+pytest-mock>=3.10.0        # Mocking utilities
+pytest-timeout>=2.1.0      # Test timeout handling
+pytest-html>=3.1.0         # HTML test reports
+pytest-benchmark>=4.0.0    # Performance benchmarking
+
+# Code Quality Tools
+black>=23.0.0              # Code formatting
+isort>=5.12.0              # Import sorting
+flake8>=6.0.0              # Style guide enforcement
+mypy>=1.0.0                # Static type checking
+
+# Security Tools
+bandit>=1.7.0              # Security linting
+safety>=2.0.0              # Dependency vulnerability scanning
+
+# Development Utilities
+pre-commit>=3.0.0          # Git hooks
+bump2version>=1.0.0        # Version management
+
+# Documentation
+mkdocs>=1.4.0              # Documentation generator
+mkdocs-material>=8.0.0     # Material theme for docs
+
+# Build Tools
+build>=0.10.0              # Python package building
+twine>=4.0.0               # Package uploading
+wheel>=0.40.0              # Wheel format support
+
+# Time mocking for tests
+freezegun>=1.2.0           # Time mocking for tests
+
+# Optional: GUI development tools
+# tkinter is included with Python
+# For advanced GUI development:
+# customtkinter>=5.0.0     # Modern tkinter widgets
+# pillow>=9.0.0            # Image processing

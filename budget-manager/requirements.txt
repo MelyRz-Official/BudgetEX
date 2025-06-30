@@ -1,0 +1,21 @@
+# Production dependencies for Budget Manager
+# Install with: pip install -r requirements.txt
+
+# GUI Framework and Theming
+sv-ttk>=2.6.0              # Sun Valley theme for tkinter
+
+# Data Visualization
+matplotlib>=3.5.0          # Charts and graphs
+
+# Data Processing (optional, for future enhancements)
+# pandas>=1.5.0            # Data analysis (uncomment if needed)
+# numpy>=1.21.0            # Numerical computing (uncomment if needed)
+
+# Database (built-in with Python)
+# sqlite3 is included with Python standard library
+
+# Configuration and Data Handling
+# json, pathlib, datetime are included with Python standard library
+
+# Minimal dependencies for core functionality
+# The app is designed to work with Python standard library + minimal external deps
