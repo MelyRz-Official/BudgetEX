@@ -5,7 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: '3.12'
@@ -13,10 +13,16 @@ env:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        exclude:
+          - os: macos-latest
+            python-version: '3.9'
+          - os: windows-latest
+            python-version: '3.10'
 
     steps:
     - name: Checkout code
@@ -31,7 +37,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
 
     - name: Install dependencies
       run: |
@@ -45,9 +51,7 @@ jobs:
         mkdir -p exports
 
     - name: Run Budget Manager tests
-      run: |
-        echo "🧪 Running Budget Manager test suite..."
-        python run_tests.py
+      run: python run_tests.py
 
     - name: Test imports
       run: |
@@ -55,8 +59,8 @@ jobs:
         python -c "from models.budget_model import BudgetModel; print('✅ Model import successful')"
         python -c "from controllers.budget_controller import BudgetController; print('✅ Controller import successful')"
 
-  lint:
-    name: Code Quality
+  build:
+    name: Build Package
     runs-on: ubuntu-latest
     needs: test
 
@@ -69,36 +73,16 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install linting tools
+    - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install black flake8
+        pip install build
 
-    - name: Run Black formatting check
-      run: |
-        black --check --diff models/ controllers/ config.py run_tests.py
-      continue-on-error: true
+    - name: Build package
+      run: python -m build
 
-    - name: Run Flake8 linting
-      run: |
-        flake8 models/ controllers/ config.py --max-line-length=100 --ignore=E203,W503
-      continue-on-error: true
-
-  summary:
-    name: Build Summary
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    if: always()
-
-    steps:
-    - name: Job Summary
-      run: |
-        echo "🎉 Budget Manager CI Pipeline Complete!"
-        echo "✅ Tests: ${{ needs.test.result }}"
-        echo "✅ Code Quality: ${{ needs.lint.result }}"
-        
-        if [ "${{ needs.test.result }}" == "success" ]; then
-          echo "🏆 All tests passed! Budget Manager is ready for deployment."
-        else
-          echo "⚠️ Some checks need attention. Please review the logs above."
-        fi
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist-packages
+        path: dist/
