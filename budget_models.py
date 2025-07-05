@@ -99,7 +99,7 @@ class BudgetData:
     def _create_scenarios(self) -> Dict[str, BudgetScenario]:
         """Create all budget scenarios with their categories"""
         
-        # July-December 2025 scenario (updated with $100 utilities and balanced percentages = 100%)
+        # July-December 2025 scenario (updated with new amounts and balanced percentages = 100%)
         july_dec_categories = {
             "Roth IRA": BudgetCategory(
                 "Roth IRA", 333.33, 8.4, 
@@ -118,11 +118,11 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 100.00, 2.5,  # Updated to $100
+                "Utilities", 150.00, 3.8,  # Updated to $150
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(
-                "Subscriptions", 90.00, 2.3,
+                "Subscriptions", 60.00, 1.5,  # Updated to $60
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
@@ -130,7 +130,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
-                "Uber/Lyft", 50.00, 1.3,
+                "Uber/Lyft", 70.00, 1.8,  # Updated to $70
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Therapy": BudgetCategory(
@@ -142,7 +142,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Flex/Buffer": BudgetCategory(
-                "Flex/Buffer", 555.14, 13.9,  # Adjusted to make total = 100%
+                "Flex/Buffer", 535.14, 13.4,  # Adjusted to make total = 100%
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
         }
@@ -166,11 +166,11 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 100.00, 2.5,  # Updated to $100
+                "Utilities", 150.00, 3.8,  # Updated to $150
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(
-                "Subscriptions", 90.00, 2.3,
+                "Subscriptions", 60.00, 1.5,  # Updated to $60
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
@@ -178,7 +178,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
-                "Uber/Lyft", 50.00, 1.3,
+                "Uber/Lyft", 70.00, 1.8,  # Updated to $70
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Dining/Entertainment": BudgetCategory(
@@ -190,7 +190,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Flex/Buffer": BudgetCategory(
-                "Flex/Buffer", 90.94, 2.3,
+                "Flex/Buffer", 50.94, 1.3,  # Adjusted to make total = 100%
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
         }
@@ -214,11 +214,11 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 100.00, 2.5,  # Updated to $100
+                "Utilities", 150.00, 3.8,  # Updated to $150
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(
-                "Subscriptions", 90.00, 2.3,
+                "Subscriptions", 60.00, 1.5,  # Updated to $60
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
@@ -226,7 +226,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
-                "Uber/Lyft", 50.00, 1.3,
+                "Uber/Lyft", 70.00, 1.8,  # Updated to $70
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Dining/Entertainment": BudgetCategory(
@@ -238,7 +238,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Flex/Buffer": BudgetCategory(
-                "Flex/Buffer", 857.61, 21.5,
+                "Flex/Buffer", 817.61, 20.5,  # Adjusted to make total = 100%
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
         }
