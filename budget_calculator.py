@@ -28,8 +28,8 @@ class BudgetCalculator:
     def __init__(self, scenario: BudgetScenario):
         self.scenario = scenario
     
-    def calculate_all_categories(self, income: float, view_mode: ViewMode, 
-                               actual_spending: Dict[str, float]) -> Dict[str, CategoryResult]:
+    def calculate_all_categories(self, first_paycheck: float, second_paycheck: float, 
+                               view_mode: ViewMode, actual_spending: Dict[str, float]) -> Dict[str, CategoryResult]:
         """Calculate results for all categories in the scenario"""
         results = {}
         
@@ -37,7 +37,7 @@ class BudgetCalculator:
             actual = actual_spending.get(category_name, 0.0)
             
             # Calculate budgeted amount and percentage
-            budgeted, percentage = category.calculate_budgeted_amount(income, view_mode)
+            budgeted, percentage = category.calculate_budgeted_amount(first_paycheck, second_paycheck, view_mode)
             
             # Calculate difference
             difference = budgeted - actual
@@ -58,10 +58,19 @@ class BudgetCalculator:
         return results
     
     def calculate_summary(self, category_results: Dict[str, CategoryResult], 
-                         income: float) -> BudgetSummary:
+                         first_paycheck: float, second_paycheck: float, view_mode: ViewMode) -> BudgetSummary:
         """Calculate budget summary from category results"""
         total_budgeted = sum(result.budgeted for result in category_results.values())
         total_spent = sum(result.actual for result in category_results.values())
+        
+        # Calculate remaining based on view mode
+        if view_mode == ViewMode.MONTHLY:
+            income = first_paycheck + second_paycheck
+        elif view_mode == ViewMode.FIRST_PAYCHECK:
+            income = first_paycheck
+        else:  # SECOND_PAYCHECK
+            income = second_paycheck
+        
         remaining = income - total_spent
         over_under = total_spent - total_budgeted
         
@@ -75,7 +84,7 @@ class BudgetCalculator:
             over_under = abs(over_under)  # Make positive for display
         else:
             over_under_status = "ON TARGET"
-            over_under_color = "blue"
+            over_under_color = "cyan"
         
         return BudgetSummary(
             total_budgeted=total_budgeted,
@@ -87,15 +96,17 @@ class BudgetCalculator:
         )
     
     def export_to_csv_data(self, category_results: Dict[str, CategoryResult], 
-                          view_mode: ViewMode) -> list:
+                          view_mode: ViewMode, first_paycheck: float = 0, second_paycheck: float = 0) -> list:
         """Export category results to CSV-ready data"""
         csv_data = []
-        csv_data.append(['View Mode', 'Scenario', 'Category', 'Percentage', 
+        csv_data.append(['View Mode', 'First Paycheck', 'Second Paycheck', 'Scenario', 'Category', 'Percentage', 
                         'Budgeted Amount', 'Actual Spent', 'Difference', 'Status'])
         
         for result in category_results.values():
             csv_data.append([
                 view_mode.value,
+                f"{first_paycheck:.2f}",
+                f"{second_paycheck:.2f}",
                 self.scenario.name,
                 result.name,
                 f"{result.percentage:.1f}%",

@@ -4,8 +4,9 @@ from typing import Dict, Any
 from enum import Enum
 
 class ViewMode(Enum):
+    FIRST_PAYCHECK = "First Paycheck"
+    SECOND_PAYCHECK = "Second Paycheck"
     MONTHLY = "Monthly"
-    PER_PAYCHECK = "Per-Paycheck"
 
 class CategoryType(Enum):
     FIXED_DOLLAR = "fixed_dollar"      # Amount stays same (HOA, Utilities)
@@ -23,29 +24,31 @@ class BudgetCategory:
     category_type: CategoryType
     category_group: CategoryGroup
     
-    def calculate_budgeted_amount(self, income: float, view_mode: ViewMode) -> tuple[float, float]:
+    def calculate_budgeted_amount(self, first_paycheck: float, second_paycheck: float, view_mode: ViewMode) -> tuple[float, float]:
         """
-        Calculate budgeted amount and percentage for given income and view mode.
+        Calculate budgeted amount and percentage for given paychecks and view mode.
         Returns (budgeted_amount, percentage)
         """
+        monthly_income = first_paycheck + second_paycheck
+        
         if self.category_type == CategoryType.FIXED_DOLLAR:
-            # Fixed dollar amount
+            # Fixed dollar amount - split 50/50 for paycheck views
             if view_mode == ViewMode.MONTHLY:
                 budgeted = self.monthly_amount
-                percentage = (budgeted / income * 100) if income > 0 else 0
-            else:  # PER_PAYCHECK
-                budgeted = self.monthly_amount / 2
-                percentage = (budgeted / income * 100) if income > 0 else 0
+                percentage = (budgeted / monthly_income * 100) if monthly_income > 0 else 0
+            else:  # First or Second Paycheck
+                budgeted = self.monthly_amount / 2  # Split fixed expenses 50/50
+                current_paycheck = first_paycheck if view_mode == ViewMode.FIRST_PAYCHECK else second_paycheck
+                percentage = (budgeted / current_paycheck * 100) if current_paycheck > 0 else 0
         else:  # FIXED_PERCENTAGE
             # Fixed percentage
             percentage = self.percentage
             if view_mode == ViewMode.MONTHLY:
-                budgeted = (percentage / 100) * income
-            else:  # PER_PAYCHECK
-                # Calculate based on monthly income (paycheck * 2) then divide by 2
-                monthly_income = income * 2
-                monthly_budgeted = (percentage / 100) * monthly_income
-                budgeted = monthly_budgeted / 2
+                budgeted = (percentage / 100) * monthly_income
+            elif view_mode == ViewMode.FIRST_PAYCHECK:
+                budgeted = (percentage / 100) * first_paycheck
+            else:  # SECOND_PAYCHECK
+                budgeted = (percentage / 100) * second_paycheck
         
         return budgeted, percentage
     
@@ -62,7 +65,7 @@ class BudgetCategory:
         if self.category_group == CategoryGroup.SAVINGS:
             # For savings, spending more is better
             if difference == 0:
-                return "On Target", "blue"
+                return "On Target", "cyan"
             elif difference > 0:
                 return "Under Goal", "orange"
             else:  # actual > budgeted
@@ -70,7 +73,7 @@ class BudgetCategory:
         else:  # EXPENSE
             # For expenses, spending less is better
             if difference == 0:
-                return "On Target", "blue"
+                return "On Target", "cyan"
             elif difference > 0:
                 return "Under Budget", "green"
             else:  # actual > budgeted
@@ -96,7 +99,7 @@ class BudgetData:
     def _create_scenarios(self) -> Dict[str, BudgetScenario]:
         """Create all budget scenarios with their categories"""
         
-        # July-December 2025 scenario
+        # July-December 2025 scenario (updated with $100 utilities and balanced percentages = 100%)
         july_dec_categories = {
             "Roth IRA": BudgetCategory(
                 "Roth IRA", 333.33, 8.4, 
@@ -115,7 +118,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 60.00, 1.5,
+                "Utilities", 100.00, 2.5,  # Updated to $100
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(
@@ -139,7 +142,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Flex/Buffer": BudgetCategory(
-                "Flex/Buffer", 657.38, 16.5,
+                "Flex/Buffer", 555.14, 13.9,  # Adjusted to make total = 100%
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
         }
@@ -163,7 +166,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 60.00, 1.5,
+                "Utilities", 100.00, 2.5,  # Updated to $100
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(
@@ -211,7 +214,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Utilities": BudgetCategory(
-                "Utilities", 60.00, 1.5,
+                "Utilities", 100.00, 2.5,  # Updated to $100
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Subscriptions": BudgetCategory(

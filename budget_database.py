@@ -1,14 +1,153 @@
-# budget_database.py
+# Add this to the top of budget_database.py
 import sqlite3
 import os
+import sys
 from datetime import datetime
 from typing import Dict, Optional, List, Tuple
+from pathlib import Path
 
 class BudgetDatabase:
     def __init__(self, db_filename: str = "budget.db"):
         self.db_filename = db_filename
-        self.db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), db_filename)
+        
+        # Fix for PyInstaller - get the correct data directory
+        self.data_dir = self.get_data_directory()
+        self.db_path = os.path.join(self.data_dir, db_filename)
+        
+        # Create data directory if it doesn't exist
+        os.makedirs(self.data_dir, exist_ok=True)
+        
+        print(f"Database will be saved to: {self.db_path}")  # Debug info
         self.init_database()
+    
+    def get_data_directory(self):
+        """Get the correct directory for saving data files"""
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller executable
+            # Save data in the user's Documents folder
+            import os
+            documents_path = os.path.expanduser("~/Documents")
+            return os.path.join(documents_path, "Personal Budget Manager")
+        else:
+            # Running as Python script - save in current directory
+            return os.path.dirname(os.path.abspath(__file__))
+    
+    def create_csv_backup(self, backup_filename: str = None) -> bool:
+        """Create a CSV backup of all budget data"""
+        try:
+            if backup_filename is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_filename = f"budget_backup_{timestamp}.csv"
+            
+            backup_path = os.path.join(self.data_dir, backup_filename)
+            
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Get all budget data
+            cursor.execute('''
+                SELECT scenario, paycheck_amount, category, actual_spent, date_updated 
+                FROM budget_data 
+                ORDER BY scenario, category
+            ''')
+            
+            results = cursor.fetchall()
+            conn.close()
+            
+            # Write to CSV
+            import csv
+            with open(backup_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Scenario', 'Paycheck Amount', 'Category', 'Actual Spent', 'Date Updated'])
+                writer.writerows(results)
+            
+            print(f"CSV backup created: {backup_path}")
+            return True
+            
+        except Exception as e:
+            print(f"Failed to create CSV backup: {str(e)}")
+            return False
+    
+    def load_from_csv_backup(self, csv_filename: str) -> bool:
+        """Load data from a CSV backup file"""
+        try:
+            csv_path = os.path.join(self.data_dir, csv_filename)
+            
+            if not os.path.exists(csv_path):
+                print(f"CSV file not found: {csv_path}")
+                return False
+            
+            import csv
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Clear existing data
+            cursor.execute('DELETE FROM budget_data')
+            
+            # Load from CSV
+            with open(csv_path, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                for row in reader:
+                    cursor.execute('''
+                        INSERT INTO budget_data 
+                        (scenario, paycheck_amount, category, actual_spent, date_updated)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (
+                        row['Scenario'],
+                        float(row['Paycheck Amount']),
+                        row['Category'],
+                        float(row['Actual Spent']),
+                        row['Date Updated']
+                    ))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"Data loaded from CSV: {csv_path}")
+            return True
+            
+        except Exception as e:
+            print(f"Failed to load from CSV: {str(e)}")
+            return False
+    
+    def get_available_csv_backups(self) -> List[str]:
+        """Get list of available CSV backup files"""
+        try:
+            csv_files = []
+            for file in os.listdir(self.data_dir):
+                if file.endswith('.csv') and 'budget' in file.lower():
+                    csv_files.append(file)
+            return sorted(csv_files, reverse=True)  # Most recent first
+        except Exception:
+            return []
+    
+    def save_budget_data(self, scenario: str, paycheck_amount: float, 
+                        category_spending: Dict[str, float]) -> bool:
+        """Save budget data to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            for category, actual_spent in category_spending.items():
+                cursor.execute('''
+                    INSERT OR REPLACE INTO budget_data 
+                    (scenario, paycheck_amount, category, actual_spent, date_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ''', (scenario, paycheck_amount, category, actual_spent))
+            
+            conn.commit()
+            conn.close()
+            
+            # Also create CSV backup on each save
+            self.create_csv_backup()
+            
+            return True
+            
+        except Exception as e:
+            print(f"Failed to save data: {str(e)}")
+            return False
+    
+    # ... rest of your existing methods stay the same ...
     
     def init_database(self):
         """Initialize SQLite database with required tables"""
@@ -79,26 +218,110 @@ class BudgetDatabase:
         except Exception as e:
             raise Exception(f"Failed to initialize database: {str(e)}")
     
-    def save_budget_data(self, scenario: str, paycheck_amount: float, 
-                        category_spending: Dict[str, float]) -> bool:
-        """Save budget data to database"""
+    def load_budget_data(self, scenario: str) -> Optional[Tuple[float, Dict[str, float]]]:
+        """Load budget data from database. Returns (paycheck_amount, category_spending)"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            for category, actual_spent in category_spending.items():
-                cursor.execute('''
-                    INSERT OR REPLACE INTO budget_data 
-                    (scenario, paycheck_amount, category, actual_spent, date_updated)
-                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ''', (scenario, paycheck_amount, category, actual_spent))
+            cursor.execute('''
+                SELECT category, actual_spent, paycheck_amount 
+                FROM budget_data 
+                WHERE scenario = ?
+            ''', (scenario,))
+            
+            results = cursor.fetchall()
+            conn.close()
+            
+            if not results:
+                return None
+            
+            # Get paycheck amount from first record
+            paycheck_amount = float(results[0][2])
+            
+            # Build category spending dictionary
+            category_spending = {}
+            for category, actual_spent, _ in results:
+                category_spending[category] = float(actual_spent)
+            
+            return paycheck_amount, category_spending
+            
+        except Exception as e:
+            print(f"Failed to load data: {str(e)}")
+            return None
+    
+    def add_spending_history(self, scenario: str, category: str, 
+                           amount: float, description: str = "") -> bool:
+        """Add entry to spending history"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO spending_history 
+                (scenario, category, amount, description, date_added)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (scenario, category, amount, description))
             
             conn.commit()
             conn.close()
             return True
             
         except Exception as e:
-            print(f"Failed to save data: {str(e)}")
+            print(f"Failed to add spending history: {str(e)}")
+            return False
+    
+    def get_spending_history(self, scenario: str, category: str = None) -> List[Tuple]:
+        """Get spending history for scenario and optionally specific category"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            if category:
+                cursor.execute('''
+                    SELECT category, amount, description, date_added 
+                    FROM spending_history 
+                    WHERE scenario = ? AND category = ?
+                    ORDER BY date_added DESC
+                ''', (scenario, category))
+            else:
+                cursor.execute('''
+                    SELECT category, amount, description, date_added 
+                    FROM spending_history 
+                    WHERE scenario = ?
+                    ORDER BY date_added DESC
+                ''', (scenario,))
+            
+            results = cursor.fetchall()
+            conn.close()
+            return results
+            
+        except Exception as e:
+            print(f"Failed to get spending history: {str(e)}")
+            return []
+    
+    def create_backup(self, backup_directory: str = "backups") -> bool:
+        """Create a backup of the database"""
+        try:
+            import shutil
+            from pathlib import Path
+            
+            # Create backup directory
+            backup_dir = Path(self.data_dir) / backup_directory
+            backup_dir.mkdir(exist_ok=True)
+            
+            # Create timestamped backup filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f"budget_backup_{timestamp}.db"
+            backup_path = backup_dir / backup_filename
+            
+            # Copy database file
+            shutil.copy2(self.db_path, backup_path)
+            print(f"Backup created: {backup_path}")
+            return True
+            
+        except Exception as e:
+            print(f"Backup failed: {str(e)}")
             return False
     
     def save_budget_snapshot(self, snapshot) -> bool:
@@ -250,110 +473,4 @@ class BudgetDatabase:
             
         except Exception as e:
             print(f"Failed to delete snapshot: {str(e)}")
-            return False
-    
-    def load_budget_data(self, scenario: str) -> Optional[Tuple[float, Dict[str, float]]]:
-        """Load budget data from database. Returns (paycheck_amount, category_spending)"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute('''
-                SELECT category, actual_spent, paycheck_amount 
-                FROM budget_data 
-                WHERE scenario = ?
-            ''', (scenario,))
-            
-            results = cursor.fetchall()
-            conn.close()
-            
-            if not results:
-                return None
-            
-            # Get paycheck amount from first record
-            paycheck_amount = float(results[0][2])
-            
-            # Build category spending dictionary
-            category_spending = {}
-            for category, actual_spent, _ in results:
-                category_spending[category] = float(actual_spent)
-            
-            return paycheck_amount, category_spending
-            
-        except Exception as e:
-            print(f"Failed to load data: {str(e)}")
-            return None
-    
-    def add_spending_history(self, scenario: str, category: str, 
-                           amount: float, description: str = "") -> bool:
-        """Add entry to spending history"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute('''
-                INSERT INTO spending_history 
-                (scenario, category, amount, description, date_added)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ''', (scenario, category, amount, description))
-            
-            conn.commit()
-            conn.close()
-            return True
-            
-        except Exception as e:
-            print(f"Failed to add spending history: {str(e)}")
-            return False
-    
-    def get_spending_history(self, scenario: str, category: str = None) -> List[Tuple]:
-        """Get spending history for scenario and optionally specific category"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            if category:
-                cursor.execute('''
-                    SELECT category, amount, description, date_added 
-                    FROM spending_history 
-                    WHERE scenario = ? AND category = ?
-                    ORDER BY date_added DESC
-                ''', (scenario, category))
-            else:
-                cursor.execute('''
-                    SELECT category, amount, description, date_added 
-                    FROM spending_history 
-                    WHERE scenario = ?
-                    ORDER BY date_added DESC
-                ''', (scenario,))
-            
-            results = cursor.fetchall()
-            conn.close()
-            return results
-            
-        except Exception as e:
-            print(f"Failed to get spending history: {str(e)}")
-            return []
-    
-    def create_backup(self, backup_directory: str = "backups") -> bool:
-        """Create a backup of the database"""
-        try:
-            import shutil
-            from pathlib import Path
-            
-            # Create backup directory
-            backup_dir = Path(backup_directory)
-            backup_dir.mkdir(exist_ok=True)
-            
-            # Create timestamped backup filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_filename = f"budget_backup_{timestamp}.db"
-            backup_path = backup_dir / backup_filename
-            
-            # Copy database file
-            shutil.copy2(self.db_path, backup_path)
-            print(f"Backup created: {backup_path}")
-            return True
-            
-        except Exception as e:
-            print(f"Backup failed: {str(e)}")
             return False

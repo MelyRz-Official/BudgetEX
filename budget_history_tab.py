@@ -657,12 +657,6 @@ CATEGORY BREAKDOWN
         
         # Get recent snapshots
         snapshots = list(self.time_tracker.snapshots.values())
-    def update_trends_chart(self, num_periods):
-        """Update the trends chart with spending data"""
-        self.trends_ax.clear()
-        
-        # Get recent snapshots
-        snapshots = list(self.time_tracker.snapshots.values())
         snapshots.sort(key=lambda s: s.period.start_date)
         recent_snapshots = snapshots[-num_periods:] if len(snapshots) >= num_periods else snapshots
         
@@ -706,6 +700,23 @@ CATEGORY BREAKDOWN
         
         self.trends_fig.tight_layout()
         self.trends_canvas.draw()
+    
+    def get_current_month_period(self):
+        """Get the current month period for default loading"""
+        return self.time_tracker.get_current_period(PeriodType.MONTHLY)
+
+    def load_latest_or_current_month(self):
+        """Load the most recent saved data or current month"""
+        available_periods = self.time_tracker.get_available_periods()
+        
+        if available_periods:
+            # Load most recent period
+            latest_period = available_periods[0]  # Already sorted by most recent
+            return latest_period.period_id
+        else:
+            # No saved periods, return current month
+            current_period = self.get_current_month_period()
+            return current_period.period_id
     
     def get_time_tracker(self):
         """Get the time tracker instance for external access"""
