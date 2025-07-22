@@ -99,7 +99,7 @@ class BudgetData:
     def _create_scenarios(self) -> Dict[str, BudgetScenario]:
         """Create all budget scenarios with their categories"""
         
-        # July-December 2025 scenario (updated with new amounts and balanced percentages = 100%)
+        # July-December 2025 scenario (Vacation Fund removed, redistributed to Groceries and Dining)
         july_dec_categories = {
             "Roth IRA": BudgetCategory(
                 "Roth IRA", 333.33, 8.4, 
@@ -108,10 +108,6 @@ class BudgetData:
             "General Savings": BudgetCategory(
                 "General Savings", 769.23, 19.3,
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.SAVINGS
-            ),
-            "Vacation Fund": BudgetCategory(
-                "Vacation Fund", 500.00, 12.5,
-                CategoryType.FIXED_DOLLAR, CategoryGroup.SAVINGS
             ),
             "HOA": BudgetCategory(
                 "HOA", 1078.81, 27.1,
@@ -126,7 +122,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
-                "Groceries", 300.00, 7.5,
+                "Groceries", 550.00, 13.8,  # Increased from 7.5% to 13.75% (rounded to 13.8%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
@@ -138,16 +134,16 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Dining/Entertainment": BudgetCategory(
-                "Dining/Entertainment", 150.00, 3.8,
+                "Dining/Entertainment", 400.00, 10.0,  # Increased from 3.8% to 10.05% (rounded to 10.0%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Flex/Buffer": BudgetCategory(
-                "Flex/Buffer", 535.14, 13.4,  # Adjusted to make total = 100%
+                "Flex/Buffer", 535.14, 13.4,  # Remains same to maintain 100% total
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
         }
         
-        # Fresh New Year (Jan-May) scenario
+        # Fresh New Year (Jan-May) scenario (Vacation Fund removed, redistributed)
         jan_may_categories = {
             "Roth IRA": BudgetCategory(
                 "Roth IRA", 1400.00, 35.2,
@@ -156,10 +152,6 @@ class BudgetData:
             "General Savings": BudgetCategory(
                 "General Savings", 250.00, 6.3,
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.SAVINGS
-            ),
-            "Vacation Fund": BudgetCategory(
-                "Vacation Fund", 50.00, 1.3,
-                CategoryType.FIXED_DOLLAR, CategoryGroup.SAVINGS
             ),
             "HOA": BudgetCategory(
                 "HOA", 1078.81, 27.1,
@@ -174,7 +166,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
-                "Groceries", 300.00, 7.5,
+                "Groceries", 324.50, 8.1,  # Increased from 7.5% to 8.15% (rounded to 8.1%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
@@ -182,7 +174,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Dining/Entertainment": BudgetCategory(
-                "Dining/Entertainment", 150.00, 3.8,
+                "Dining/Entertainment", 178.00, 4.5,  # Increased from 3.8% to 4.45% (rounded to 4.5%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Therapy": BudgetCategory(
@@ -195,7 +187,7 @@ class BudgetData:
             ),
         }
         
-        # Fresh New Year (June-Dec) scenario
+        # Fresh New Year (June-Dec) scenario (Vacation Fund removed, redistributed)
         june_dec_categories = {
             "Roth IRA": BudgetCategory(
                 "Roth IRA", 0.00, 0.0,
@@ -204,10 +196,6 @@ class BudgetData:
             "General Savings": BudgetCategory(
                 "General Savings", 833.33, 20.9,
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.SAVINGS
-            ),
-            "Vacation Fund": BudgetCategory(
-                "Vacation Fund", 300.00, 7.5,
-                CategoryType.FIXED_DOLLAR, CategoryGroup.SAVINGS
             ),
             "HOA": BudgetCategory(
                 "HOA", 1078.81, 27.1,
@@ -222,7 +210,7 @@ class BudgetData:
                 CategoryType.FIXED_DOLLAR, CategoryGroup.EXPENSE
             ),
             "Groceries": BudgetCategory(
-                "Groceries", 300.00, 7.5,
+                "Groceries", 450.00, 11.3,  # Increased from 7.5% to 11.25% (rounded to 11.3%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Uber/Lyft": BudgetCategory(
@@ -230,7 +218,7 @@ class BudgetData:
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Dining/Entertainment": BudgetCategory(
-                "Dining/Entertainment", 150.00, 3.8,
+                "Dining/Entertainment", 302.00, 7.6,  # Increased from 3.8% to 7.55% (rounded to 7.6%)
                 CategoryType.FIXED_PERCENTAGE, CategoryGroup.EXPENSE
             ),
             "Therapy": BudgetCategory(
