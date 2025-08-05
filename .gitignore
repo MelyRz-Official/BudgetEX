@@ -17,3 +17,5 @@ site/
 
 # Pre-commit
 .pre-commit-config.yaml.backup
+
+*.db

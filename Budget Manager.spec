@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['budget_app.py'],
+    ['budget_app_main.py'],
     pathex=[],
     binaries=[],
     datas=[],

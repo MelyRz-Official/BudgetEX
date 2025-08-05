@@ -721,3 +721,396 @@ CATEGORY BREAKDOWN
     def get_time_tracker(self):
         """Get the time tracker instance for external access"""
         return self.time_tracker
+    
+    def save_current_budget(self):
+        """Save current budget data to the selected period - UPDATED for individual paychecks"""
+        if not self.selected_period:
+            messagebox.showerror("Error", "Please select a period first")
+            return
+        
+        try:
+            # Get current budget data from main app
+            current_data = self.get_current_data_callback()
+            
+            if not current_data:
+                messagebox.showerror("Error", "No current budget data available")
+                return
+            
+            # Create category data dictionary
+            category_data = {}
+            for category_name, result in current_data['category_results'].items():
+                category_data[category_name] = {
+                    'budgeted': result.budgeted,
+                    'actual': result.actual,
+                    'notes': ''
+                }
+            
+            # Get notes from text widget
+            notes = self.notes_text.get(1.0, tk.END).strip()
+            
+            # Create snapshot with individual paycheck amounts - UPDATED
+            snapshot = BudgetSnapshot(
+                period=self.selected_period,
+                scenario_name=current_data['scenario_name'],
+                first_paycheck=current_data['first_paycheck'],  # NEW
+                second_paycheck=current_data['second_paycheck'],  # NEW
+                total_income=current_data['total_income'],  # NEW field name
+                view_mode=current_data['view_mode'].value,
+                category_data=category_data,
+                total_budgeted=current_data['summary'].total_budgeted,
+                total_spent=current_data['summary'].total_spent,
+                saved_date=datetime.now(),
+                notes=notes
+            )
+            
+            # Save snapshot
+            self.time_tracker.save_snapshot(snapshot)
+            
+            # Update display
+            self.update_period_info()
+            self.refresh_history_list()
+            
+            messagebox.showinfo("Success", f"Budget data saved for {self.selected_period.display_name}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save budget data: {str(e)}")
+
+    def show_period_data_popup(self, snapshot):
+        """Show period data in a popup window - UPDATED for individual paychecks"""
+        popup = tk.Toplevel(self.parent_frame)
+        popup.title(f"Budget Data - {snapshot.period.display_name}")
+        popup.geometry("600x500")
+        popup.transient(self.parent_frame.winfo_toplevel())
+        popup.grab_set()
+        
+        # Create treeview for data
+        columns = ("Category", "Budgeted", "Actual", "Difference")
+        tree = ttk.Treeview(popup, columns=columns, show="headings")
+        
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=120)
+        
+        # Populate data
+        for category, data in snapshot.category_data.items():
+            budgeted = data['budgeted']
+            actual = data['actual']
+            difference = budgeted - actual
+            
+            tree.insert("", "end", values=(
+                category,
+                f"${budgeted:.2f}",
+                f"${actual:.2f}",
+                f"${difference:.2f}"
+            ))
+        
+        tree.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Summary info with individual paycheck details - UPDATED
+        info_frame = ttk.Frame(popup)
+        info_frame.pack(fill="x", padx=10, pady=5)
+        
+        ttk.Label(info_frame, text=f"First Paycheck: ${snapshot.first_paycheck:.2f}").pack(anchor="w")  # NEW
+        ttk.Label(info_frame, text=f"Second Paycheck: ${snapshot.second_paycheck:.2f}").pack(anchor="w")  # NEW
+        ttk.Label(info_frame, text=f"Total Income: ${snapshot.total_income:.2f}").pack(anchor="w")  # UPDATED
+        ttk.Label(info_frame, text=f"Total Budgeted: ${snapshot.total_budgeted:.2f}").pack(anchor="w")
+        ttk.Label(info_frame, text=f"Total Spent: ${snapshot.total_spent:.2f}").pack(anchor="w")
+        
+        remaining = snapshot.total_income - snapshot.total_spent  # Use total_income instead of income
+        ttk.Label(info_frame, text=f"Remaining: ${remaining:.2f}").pack(anchor="w")
+        
+        # Notes
+        if snapshot.notes:
+            notes_frame = ttk.LabelFrame(popup, text="Notes")
+            notes_frame.pack(fill="x", padx=10, pady=5)
+            ttk.Label(notes_frame, text=snapshot.notes, wraplength=500).pack(padx=5, pady=5)
+        
+        # Close button
+        ttk.Button(popup, text="Close", command=popup.destroy).pack(pady=10)
+
+    def update_period_info(self):
+        """Update the period information display - UPDATED for individual paychecks"""
+        if self.selected_period:
+            info_text = (f"Period: {self.selected_period.display_name}\n"
+                        f"Dates: {self.selected_period.start_date} to {self.selected_period.end_date}\n"
+                        f"Duration: {self.selected_period.days_in_period()} days\n"
+                        f"Type: {self.selected_period.period_type.value}")
+            
+            # Check if snapshot exists
+            snapshot = self.time_tracker.get_snapshot(self.selected_period.period_id)
+            if snapshot:
+                info_text += f"\nSaved: {snapshot.saved_date.strftime('%Y-%m-%d %H:%M')}"
+                info_text += f"\nFirst Paycheck: ${snapshot.first_paycheck:.2f}"  # NEW
+                info_text += f"\nSecond Paycheck: ${snapshot.second_paycheck:.2f}"  # NEW
+                info_text += f"\nTotal Income: ${snapshot.total_income:.2f}"  # UPDATED
+                info_text += f"\nTotal Spent: ${snapshot.total_spent:.2f}"
+                self.notes_text.delete(1.0, tk.END)
+                self.notes_text.insert(1.0, snapshot.notes)
+            else:
+                info_text += "\nStatus: Not saved"
+                self.notes_text.delete(1.0, tk.END)
+            
+            self.period_info_label.config(text=info_text)
+
+    def display_historical_data(self, period_id):
+        """Display historical data for a specific period - ENHANCED status calculation"""
+        snapshot = self.time_tracker.get_snapshot(period_id)
+        if not snapshot:
+            return
+        
+        # Clear existing data
+        for item in self.history_tree.get_children():
+            self.history_tree.delete(item)
+        
+        # Populate historical data with proper status calculation
+        for category, data in snapshot.category_data.items():
+            budgeted = data['budgeted']
+            actual = data['actual']
+            difference = budgeted - actual
+            
+            # Better status determination that matches your app
+            if actual == 0:
+                status = "Not Set"
+            elif abs(difference) < 0.01:  # Essentially equal
+                status = "On Target"
+            elif actual > budgeted:
+                # Check if it's a savings category
+                category_lower = category.lower()
+                is_savings = any(keyword in category_lower for keyword in 
+                    ['savings', 'ira', 'retirement', 'investment', 'emergency'])
+                
+                if is_savings:
+                    status = "Exceeding Goal!"  # Good for savings
+                else:
+                    status = "Over Budget"  # Bad for spending
+            else:  # actual < budgeted
+                category_lower = category.lower()
+                is_savings = any(keyword in category_lower for keyword in 
+                    ['savings', 'ira', 'retirement', 'investment', 'emergency'])
+                
+                if is_savings:
+                    status = "Under Goal"  # Bad for savings
+                else:
+                    status = "Under Budget"  # Good for spending
+            
+            self.history_tree.insert("", "end", values=(
+                category,
+                f"${budgeted:.2f}",
+                f"${actual:.2f}",
+                f"${difference:.2f}",
+                status
+            ))
+
+    def show_comparison_popup(self, comparison):
+        """Show period comparison in a popup window - ENHANCED with paycheck comparison"""
+        popup = tk.Toplevel(self.parent_frame)
+        popup.title(f"Period Comparison")
+        popup.geometry("800x600")  # Made wider for more info
+        popup.transient(self.parent_frame.winfo_toplevel())
+        popup.grab_set()
+        
+        # Get the actual snapshots for detailed comparison
+        available_periods = self.time_tracker.get_available_periods()
+        snapshot1 = None
+        snapshot2 = None
+        
+        for period in available_periods:
+            if period.display_name == comparison['period1']:
+                snapshot1 = self.time_tracker.get_snapshot(period.period_id)
+            if period.display_name == comparison['period2']:
+                snapshot2 = self.time_tracker.get_snapshot(period.period_id)
+        
+        # Summary info with paycheck details - ENHANCED
+        summary_frame = ttk.LabelFrame(popup, text="Comparison Summary")
+        summary_frame.pack(fill="x", padx=10, pady=5)
+        
+        ttk.Label(summary_frame, text=f"Comparing: {comparison['period1']} vs {comparison['period2']}", 
+                font=("", 10, "bold")).pack(anchor="w")
+        ttk.Label(summary_frame, text=f"Total Spending Change: ${comparison['total_change']:.2f} ({comparison['total_percent_change']:.1f}%)").pack(anchor="w")
+        
+        # Add paycheck comparison if we have the snapshots
+        if snapshot1 and snapshot2:
+            first_change = snapshot2.first_paycheck - snapshot1.first_paycheck
+            second_change = snapshot2.second_paycheck - snapshot1.second_paycheck
+            total_income_change = snapshot2.total_income - snapshot1.total_income
+            
+            paycheck_frame = ttk.LabelFrame(popup, text="Income Comparison")
+            paycheck_frame.pack(fill="x", padx=10, pady=5)
+            
+            ttk.Label(paycheck_frame, text=f"First Paycheck: ${snapshot1.first_paycheck:.2f} → ${snapshot2.first_paycheck:.2f} ({first_change:+.2f})").pack(anchor="w")
+            ttk.Label(paycheck_frame, text=f"Second Paycheck: ${snapshot1.second_paycheck:.2f} → ${snapshot2.second_paycheck:.2f} ({second_change:+.2f})").pack(anchor="w")
+            ttk.Label(paycheck_frame, text=f"Total Income: ${snapshot1.total_income:.2f} → ${snapshot2.total_income:.2f} ({total_income_change:+.2f})").pack(anchor="w")
+        
+        # Category comparison table
+        columns = ("Category", comparison['period1'], comparison['period2'], "Change", "% Change")
+        tree = ttk.Treeview(popup, columns=columns, show="headings")
+        
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=140)
+        
+        # Populate comparison data
+        for category, data in comparison['categories'].items():
+            period1_key = f"{comparison['period1']}_actual"
+            period2_key = f"{comparison['period2']}_actual"
+            
+            # Color code significant changes
+            change = data['change']
+            if abs(change) > 50:  # Significant change
+                tag = "significant"
+            elif change > 0:
+                tag = "increase"
+            elif change < 0:
+                tag = "decrease"
+            else:
+                tag = "no_change"
+            
+            tree.insert("", "end", values=(
+                category,
+                f"${data[period1_key]:.2f}",
+                f"${data[period2_key]:.2f}",
+                f"${data['change']:.2f}",
+                f"{data['percent_change']:.1f}%"
+            ), tags=(tag,))
+        
+        # Configure tags for colors
+        tree.tag_configure("significant", background="#ffeb3b")
+        tree.tag_configure("increase", background="#ffcdd2")
+        tree.tag_configure("decrease", background="#c8e6c9")
+        tree.tag_configure("no_change", background="#f5f5f5")
+        
+        tree.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Export button and close button
+        button_frame = ttk.Frame(popup)
+        button_frame.pack(pady=10)
+        
+        ttk.Button(button_frame, text="Export Comparison", 
+                command=lambda: self.export_comparison(comparison, snapshot1, snapshot2)).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Close", command=popup.destroy).pack(side="left", padx=5)
+
+    def export_comparison(self, comparison, snapshot1, snapshot2):
+        """Export comparison to CSV"""
+        from tkinter import filedialog
+        import csv
+        
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            initialname=f"comparison_{comparison['period1']}_{comparison['period2']}.csv"
+        )
+        
+        if filename:
+            try:
+                with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                    writer = csv.writer(csvfile)
+                    
+                    # Header
+                    writer.writerow(['Period Comparison Report'])
+                    writer.writerow(['Period 1', comparison['period1']])
+                    writer.writerow(['Period 2', comparison['period2']])
+                    writer.writerow([])
+                    
+                    # Income comparison if available
+                    if snapshot1 and snapshot2:
+                        writer.writerow(['Income Comparison'])
+                        writer.writerow(['', 'Period 1', 'Period 2', 'Change'])
+                        writer.writerow(['First Paycheck', f"${snapshot1.first_paycheck:.2f}", f"${snapshot2.first_paycheck:.2f}", f"${snapshot2.first_paycheck - snapshot1.first_paycheck:.2f}"])
+                        writer.writerow(['Second Paycheck', f"${snapshot1.second_paycheck:.2f}", f"${snapshot2.second_paycheck:.2f}", f"${snapshot2.second_paycheck - snapshot1.second_paycheck:.2f}"])
+                        writer.writerow(['Total Income', f"${snapshot1.total_income:.2f}", f"${snapshot2.total_income:.2f}", f"${snapshot2.total_income - snapshot1.total_income:.2f}"])
+                        writer.writerow([])
+                    
+                    # Category comparison
+                    writer.writerow(['Category Comparison'])
+                    writer.writerow(['Category', 'Period 1', 'Period 2', 'Change', '% Change'])
+                    
+                    for category, data in comparison['categories'].items():
+                        period1_key = f"{comparison['period1']}_actual"
+                        period2_key = f"{comparison['period2']}_actual"
+                        
+                        writer.writerow([
+                            category,
+                            f"${data[period1_key]:.2f}",
+                            f"${data[period2_key]:.2f}",
+                            f"${data['change']:.2f}",
+                            f"{data['percent_change']:.1f}%"
+                        ])
+                
+                messagebox.showinfo("Success", f"Comparison exported to {filename}")
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export comparison: {str(e)}")
+
+    # ADD this new method for better overage analysis
+    def analyze_overages_for_period(self, period_id):
+        """Analyze overages for a specific period - useful for overage carry-over"""
+        snapshot = self.time_tracker.get_snapshot(period_id)
+        if not snapshot:
+            return {}
+        
+        overages = {}
+        for category_name, category_data in snapshot.category_data.items():
+            budgeted = category_data['budgeted']
+            actual = category_data['actual']
+            
+            if actual > budgeted:
+                # Check if this is truly an overage (not a savings goal)
+                category_lower = category_name.lower()
+                is_savings = any(keyword in category_lower for keyword in 
+                    ['savings', 'ira', 'retirement', 'investment', 'emergency'])
+                
+                if not is_savings:  # Only include spending categories
+                    overages[category_name] = actual - budgeted
+        
+        return overages
+
+    # ADD this method to get overage summary for display
+    def show_overage_analysis(self):
+        """Show overage analysis for recent periods"""
+        if not self.time_tracker.snapshots:
+            messagebox.showinfo("No Data", "No historical data available for analysis")
+            return
+        
+        # Create analysis window
+        analysis_window = tk.Toplevel(self.parent_frame)
+        analysis_window.title("Overage Analysis")
+        analysis_window.geometry("700x500")
+        analysis_window.transient(self.parent_frame.winfo_toplevel())
+        analysis_window.grab_set()
+        
+        # Get recent periods
+        recent_periods = sorted(self.time_tracker.get_available_periods(), 
+                            key=lambda p: p.start_date, reverse=True)[:6]
+        
+        # Create text display
+        text_frame = ttk.Frame(analysis_window)
+        text_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        text_widget = tk.Text(text_frame, wrap=tk.WORD, font=("Consolas", 10))
+        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Generate overage analysis
+        analysis_text = "OVERAGE ANALYSIS REPORT\n" + "="*50 + "\n\n"
+        
+        for period in recent_periods:
+            overages = self.analyze_overages_for_period(period.period_id)
+            total_overage = sum(overages.values())
+            
+            analysis_text += f"{period.display_name}:\n"
+            if overages:
+                for category, amount in overages.items():
+                    analysis_text += f"  • {category}: ${amount:.2f}\n"
+                analysis_text += f"  Total Overage: ${total_overage:.2f}\n"
+            else:
+                analysis_text += "  No spending overages\n"
+            analysis_text += "\n"
+        
+        text_widget.insert(1.0, analysis_text)
+        text_widget.config(state="disabled")
+        
+        # Close button
+        ttk.Button(analysis_window, text="Close", command=analysis_window.destroy).pack(pady=10)
